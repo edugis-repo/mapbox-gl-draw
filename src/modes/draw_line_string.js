@@ -1,5 +1,4 @@
 import * as CommonSelectors from '../lib/common_selectors';
-import isEventAtCoordinates from '../lib/is_event_at_coordinates';
 import doubleClickZoom from '../lib/double_click_zoom';
 import * as Constants from '../constants';
 import createVertex from '../lib/create_vertex';
@@ -145,12 +144,9 @@ DrawLineString.snapToFeatures = function (event) {
     'gl-draw-point-inactive.cold',
   ];
   const layers = this.map.getStyle().layers.filter(layer => testlayers.includes(layer.id)).map(layer => layer.id);
-  console.log(`layer.length: ${layers.length}`);
   const features = this.map.queryRenderedFeatures(box, {layers});
-  console.log(`features: ${features.length}`);
   if (features.length) {
     // get nearest feature point
-    //console.log('nearest point')
     let nearestDistance;
     const nearestPoint = [0, 0];
     for (const feature of features) {
@@ -158,7 +154,6 @@ DrawLineString.snapToFeatures = function (event) {
     }
     if (nearestDistance) {
       resultLngLat = {lng: nearestPoint[0], lat: nearestPoint[1]};
-      console.log(resultLngLat);
     }
   }
   return resultLngLat;
@@ -173,7 +168,13 @@ DrawLineString.onMouseMove = function(state, e) {
 };
 
 DrawLineString.onTap = DrawLineString.onClick = function(state, e) {
-// todo: check if clicked location is same as previous point => end line draw
+  if (state.currentVertexPosition > 0 &&
+      state.line.coordinates[state.currentVertexPosition][0] ===
+        state.line.coordinates[state.currentVertexPosition - 1][0] &&
+      state.line.coordinates[state.currentVertexPosition][1] ===
+        state.line.coordinates[state.currentVertexPosition - 1][1]) {
+    return this.changeMode(Constants.modes.SIMPLE_SELECT, { featureIds: [state.line.id] });
+  }
   this.clickAnywhere(state, e);
 };
 
