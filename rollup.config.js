@@ -15,7 +15,7 @@ export default {
     name: 'MapboxDraw',
     file: outputFile,
     format: 'umd',
-    sourcemap: true,
+    sourcemap: false, // for debug with polymer
     indent: false
   },
   treeshake: true,
