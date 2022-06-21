@@ -86,82 +86,9 @@ DrawLineString.clickOnVertex = function(state) {
   return this.changeMode(Constants.modes.SIMPLE_SELECT, { featureIds: [state.line.id] });
 };
 
-// Converts numeric degrees to radians
-function toRad(Value) {
-  return Value * Math.PI / 180;
-}
-
-//This function takes in latitude and longitude of two location and returns the distance between them as the crow flies (in km)
-function calcCrow(lat1, lon1, lat2, lon2) {
-  const R = 6371; // km
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  lat1 = toRad(lat1);
-  lat2 = toRad(lat2);
-
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const d = R * c;
-  return d;
-}
-
-function getNearestPoint(lngLat, coords, nearestDistance, nearestPoint) {
-  if (Array.isArray(coords) && coords.length && Array.isArray(coords[0])) {
-    for (const subCoord of coords) {
-      nearestDistance = getNearestPoint(lngLat, subCoord, nearestDistance, nearestPoint);
-    }
-    return nearestDistance;
-  }
-  const distance = calcCrow(lngLat.lng, lngLat.lat, coords[0], coords[1]);
-  if (nearestDistance === undefined || nearestDistance > distance) {
-    nearestDistance = distance;
-    nearestPoint[0] = coords[0];
-    nearestPoint[1] = coords[1];
-  }
-  return nearestDistance;
-}
-
-DrawLineString.snapToFeatures = function (event) {
-  let resultLngLat = event.lngLat;// {lng: lngLat.lng, lat: lngLat.lat};
-  //const box = (event) ? mapEventToBoundingBox(event, buffer) : bbox;
-  const buffer = 30;
-  const box = [[event.point.x - buffer, event.point.y - buffer], [event.point.x + buffer, event.point.y + buffer]];
-  const testlayers = ['drawPoints', 'drawLines', 'drawPolygons',
-    //'gl-draw-polygon-fill-inactive.hot',
-    //'gl-draw-polygon-stroke-inactive.hot',
-    //'gl-draw-line-inactive.hot',
-    //'gl-draw-polygon-and-line-vertex-stroke-inactive.hot',
-    //'gl-draw-polygon-and-line-vertex-inactive.hot',
-    //'gl-draw-point-point-stroke-inactive.hot',
-    //'gl-draw-point-inactive.hot',
-    //'gl-draw-polygon-fill-inactive.cold',
-    'gl-draw-polygon-stroke-inactive.cold',
-    'gl-draw-line-inactive.cold',
-    //'gl-draw-polygon-and-line-vertex-stroke-inactive.cold',
-    //'gl-draw-polygon-and-line-vertex-inactive.cold',
-    //'gl-draw-point-point-stroke-inactive.cold',
-    'gl-draw-point-inactive.cold',
-  ];
-  const layers = this.map.getStyle().layers.filter(layer => testlayers.includes(layer.id)).map(layer => layer.id);
-  const features = this.map.queryRenderedFeatures(box, {layers});
-  if (features.length) {
-    // get nearest feature point
-    let nearestDistance;
-    const nearestPoint = [0, 0];
-    for (const feature of features) {
-      nearestDistance = getNearestPoint(event.lngLat, feature.geometry.coordinates, nearestDistance, nearestPoint);
-    }
-    if (nearestDistance) {
-      resultLngLat = {lng: nearestPoint[0], lat: nearestPoint[1]};
-    }
-  }
-  return resultLngLat;
-};
 
 DrawLineString.onMouseMove = function(state, e) {
-  const lngLat = this.snapToFeatures(e);
-  state.line.updateCoordinate(state.currentVertexPosition, lngLat.lng, lngLat.lat);
+  state.line.updateCoordinate(state.currentVertexPosition, e.lngLat.lng, e.lngLat.lat);
   /* if (CommonSelectors.isVertex(e)) {
     this.updateUIClasses({ mouse: Constants.cursors.POINTER });
   }*/

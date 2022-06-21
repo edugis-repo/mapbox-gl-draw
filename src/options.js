@@ -15,7 +15,10 @@ const defaultOptions = {
   styles,
   modes,
   controls: {},
-  userProperties: false
+  userProperties: false,
+  snapEnabled: true,
+  snapClickBuffer: 20,
+  snapTouchBuffer: 30
 };
 
 const showControls = {
