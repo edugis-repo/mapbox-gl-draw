@@ -1,7 +1,6 @@
 import * as CommonSelectors from '../lib/common_selectors';
 import doubleClickZoom from '../lib/double_click_zoom';
 import * as Constants from '../constants';
-import isEventAtCoordinates from '../lib/is_event_at_coordinates';
 import createVertex from '../lib/create_vertex';
 
 const DrawPolygon = {};
@@ -33,9 +32,9 @@ DrawPolygon.onSetup = function() {
 };
 
 DrawPolygon.clickAnywhere = function(state, e) {
-  if (state.currentVertexPosition > 0 && isEventAtCoordinates(e, state.polygon.coordinates[0][state.currentVertexPosition - 1])) {
+  /*if (state.currentVertexPosition > 0 && isEventAtCoordinates(e, state.polygon.coordinates[0][state.currentVertexPosition - 1])) {
     return this.changeMode(Constants.modes.SIMPLE_SELECT, { featureIds: [state.polygon.id] });
-  }
+  }*/
   this.updateUIClasses({ mouse: Constants.cursors.ADD });
   state.polygon.updateCoordinate(`0.${state.currentVertexPosition}`, e.lngLat.lng, e.lngLat.lat);
   state.currentVertexPosition++;
@@ -48,13 +47,22 @@ DrawPolygon.clickOnVertex = function(state) {
 
 DrawPolygon.onMouseMove = function(state, e) {
   state.polygon.updateCoordinate(`0.${state.currentVertexPosition}`, e.lngLat.lng, e.lngLat.lat);
+  /*
   if (CommonSelectors.isVertex(e)) {
     this.updateUIClasses({ mouse: Constants.cursors.POINTER });
-  }
+  }*/
 };
 
 DrawPolygon.onTap = DrawPolygon.onClick = function(state, e) {
-  if (CommonSelectors.isVertex(e)) return this.clickOnVertex(state, e);
+  //if (CommonSelectors.isVertex(e)) return this.clickOnVertex(state, e);
+  if (state.currentVertexPosition > 0 &&
+    state.polygon.coordinates.length > 0 &&
+    state.polygon.coordinates[0][state.currentVertexPosition][0] ===
+      state.polygon.coordinates[0][state.currentVertexPosition - 1][0] &&
+    state.polygon.coordinates[0][state.currentVertexPosition][1] ===
+      state.polygon.coordinates[0][state.currentVertexPosition - 1][1]) {
+    return this.changeMode(Constants.modes.SIMPLE_SELECT, { featureIds: [state.polygon.id] });
+  }
   return this.clickAnywhere(state, e);
 };
 
@@ -95,6 +103,13 @@ DrawPolygon.toDisplayFeatures = function(state, geojson, display) {
   // Don't render a polygon until it has two positions
   // (and a 3rd which is just the first repeated)
   if (geojson.geometry.coordinates.length === 0) return;
+
+  if (geojson.geometry.coordinates[0].length && geojson.geometry.coordinates[0][0] === undefined) return;
+
+  for (let i = 0; i < geojson.geometry.coordinates[0].length; i++) {
+    const coordinate = geojson.geometry.coordinates[0][i];
+    display(createVertex(state.polygon.id, coordinate, `0.${i}`, false));
+  }
 
   const coordinateCount = geojson.geometry.coordinates[0].length;
   // 2 coordinates after selecting a draw type
