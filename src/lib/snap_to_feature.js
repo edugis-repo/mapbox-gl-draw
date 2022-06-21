@@ -59,13 +59,29 @@ export default function (event, ctx) {
       'gl-draw-point-inactive.cold',
     ];
     const layers = map.getStyle().layers.filter(layer => testlayers.includes(layer.id)).map(layer => layer.id);
-    const features = map.queryRenderedFeatures(box, {layers});
+    const uniqueFeatures = new Set();
+    const features = map.queryRenderedFeatures(box, {layers}).filter((feature) => {
+      if (!Object.prototype.hasOwnProperty.call(feature.properties, 'id')) {
+        return true;
+      }
+      if (uniqueFeatures.has(feature.properties.id)) {
+        return false;
+      }
+      uniqueFeatures.add(feature.properties.id);
+      return true;
+    });
     if (features.length) {
       // get nearest feature point
       let nearestDistance;
       const nearestPoint = [0, 0];
       for (const feature of features) {
-        nearestDistance = getNearestPoint(event.lngLat, feature.geometry.coordinates, nearestDistance, nearestPoint);
+        const storedFeature = ctx.store.get(feature.properties.id);
+        if (storedFeature.coordinates) {
+          nearestDistance = getNearestPoint(event.lngLat, storedFeature.coordinates, nearestDistance, nearestPoint);
+        } else {
+          // use slightly unprecise coordinate result from queryRenderedFeatures
+          nearestDistance = getNearestPoint(event.lngLat, feature.geometry.coordinates, nearestDistance, nearestPoint);
+        }
       }
       if (nearestDistance) {
         //resultLngLat = {lng: nearestPoint[0], lat: nearestPoint[1]};
