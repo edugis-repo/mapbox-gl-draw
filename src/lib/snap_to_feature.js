@@ -38,6 +38,11 @@ function getNearestPoint(lngLat, coords, nearestDistance, nearestPoint) {
 
 export default function (event, ctx) {
   if (ctx.options.snapEnabled) {
+    const selectedFeatureIds = ctx.api.getSelectedIds();
+    if (ctx.events.currentModeName().indexOf('select') !== -1 && selectedFeatureIds.length === 0) {
+      // mode is 'simple_select' or 'direct_select', nothing selected
+      return;
+    }
     const map = ctx.map;
     const resultLngLat = event.lngLat;// {lng: lngLat.lng, lat: lngLat.lat};
     const buffer = ctx.options.snapClickBuffer;
@@ -68,6 +73,9 @@ export default function (event, ctx) {
         return false;
       }
       uniqueFeatures.add(feature.properties.id);
+      if (selectedFeatureIds.includes(feature.properties.id)) {
+        return false; // do not snap to self
+      }
       return true;
     });
     if (features.length) {
