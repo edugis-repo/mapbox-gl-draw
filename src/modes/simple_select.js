@@ -274,11 +274,11 @@ SimpleSelect.dragVertices = function(state, e, delta, pointFeatures) {
   if (constrainedDelta.lng === origDelta.lng && constrainedDelta.lat === origDelta.lat) {
     // not constrained
     if (pointFeatures.length === 1) {
-      pointFeatures[0].incomingCoords([e.lngLat.lng, e.lngLat.lat])
+      pointFeatures[0].incomingCoords([e.lngLat.lng, e.lngLat.lat]);
     } else {
       // determine wich point should be snapped to e.lngLat
-      let nearestDistance
-      let nearestPoint
+      let nearestDistance;
+      let nearestPoint;
       for (let i = 0; i < pointFeatures.length; i++)  {
         const coord = pointFeatures[i].getCoordinates();
         const deltaLng = coord[0] + constrainedDelta.lng - e.lngLat.lng;
@@ -291,7 +291,7 @@ SimpleSelect.dragVertices = function(state, e, delta, pointFeatures) {
       }
       for (let i = 0; i < pointFeatures.length; i++) {
         if (i === nearestPoint) {
-          pointFeatures[i].incomingCoords([e.lngLat.lng, e.lngLat.lat])
+          pointFeatures[i].incomingCoords([e.lngLat.lng, e.lngLat.lat]);
         } else {
           const coord = pointFeatures[i].getCoordinates();
           pointFeatures[i].incomingCoords([coord[0] + constrainedDelta.lng, coord[1] + constrainedDelta.lat]);
@@ -305,7 +305,7 @@ SimpleSelect.dragVertices = function(state, e, delta, pointFeatures) {
       feature.incomingCoords([coord[0] + constrainedDelta.lng, coord[1] + constrainedDelta.lat]);
     }
   }
-}
+};
 
 SimpleSelect.onTouchEnd = SimpleSelect.onMouseUp = function(state, e) {
   // End any extended interactions
