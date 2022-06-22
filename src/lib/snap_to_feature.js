@@ -36,8 +36,12 @@ function getNearestPoint(lngLat, coords, nearestDistance, nearestPoint) {
   return nearestDistance;
 }
 
+function isAltDown(event) {
+  return event.originalEvent ? event.originalEvent.altKey : false;
+}
+
 export default function (event, ctx) {
-  if (ctx.options.snapEnabled) {
+  if (ctx.options.snapEnabled && !isAltDown(event)) {
     const selectedFeatureIds = ctx.api.getSelectedIds();
     if (ctx.events.currentModeName().indexOf('select') !== -1 && selectedFeatureIds.length === 0) {
       // mode is 'simple_select' or 'direct_select', nothing selected
