@@ -95,8 +95,8 @@ DirectSelect.dragVertex = function(state, e, delta) {
       state.feature.updateCoordinate(state.selectedCoordPaths[0], e.lngLat.lng, e.lngLat.lat);
     } else {
       // find vertex being dragged
-      let nearestDistance
-      let nearestPoint
+      let nearestDistance;
+      let nearestPoint;
       for (let i = 0; i < selectedCoords.length; i++)  {
         const coord = selectedCoords[i];
         const deltaLng = coord[0] + constrainedDelta.lng - e.lngLat.lng;
