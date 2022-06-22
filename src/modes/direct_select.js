@@ -88,9 +88,40 @@ DirectSelect.dragVertex = function(state, e, delta) {
   }));
 
   const constrainedDelta = constrainFeatureMovement(selectedCoordPoints, delta);
-  for (let i = 0; i < selectedCoords.length; i++) {
-    const coord = selectedCoords[i];
-    state.feature.updateCoordinate(state.selectedCoordPaths[i], coord[0] + constrainedDelta.lng, coord[1] + constrainedDelta.lat);
+  if (constrainedDelta.lng === delta.lng && constrainedDelta.lat === delta.lat) {
+    // not constrained
+    if (selectedCoords.length === 1) {
+      // single point, do not use inprecise delta
+      state.feature.updateCoordinate(state.selectedCoordPaths[0], e.lngLat.lng, e.lngLat.lat);
+    } else {
+      // find vertex being dragged
+      let nearestDistance
+      let nearestPoint
+      for (let i = 0; i < selectedCoords.length; i++)  {
+        const coord = selectedCoords[i];
+        const deltaLng = coord[0] + constrainedDelta.lng - e.lngLat.lng;
+        const deltaLat = coord[1] + constrainedDelta.lat - e.lngLat.lat;
+        const distance = deltaLng * deltaLng + deltaLat * deltaLat;
+        if (nearestDistance === undefined || nearestDistance > distance) {
+          nearestDistance = distance;
+          nearestPoint = i;
+        }
+      }
+      for (let i = 0; i < selectedCoords.length; i++) {
+        const coord = selectedCoords[i];
+        if (i === nearestPoint) {
+          state.feature.updateCoordinate(state.selectedCoordPaths[i], e.lngLat.lng, e.lngLat.lat);
+        } else {
+          state.feature.updateCoordinate(state.selectedCoordPaths[i], coord[0] + constrainedDelta.lng, coord[1] + constrainedDelta.lat);
+        }
+      }
+    }
+  } else {
+    // constrained, delta is not very precise
+    for (let i = 0; i < selectedCoords.length; i++) {
+      const coord = selectedCoords[i];
+      state.feature.updateCoordinate(state.selectedCoordPaths[i], coord[0] + constrainedDelta.lng, coord[1] + constrainedDelta.lat);
+    }
   }
 };
 

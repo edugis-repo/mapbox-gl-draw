@@ -5,6 +5,7 @@ import StringSet from '../lib/string_set';
 import doubleClickZoom from '../lib/double_click_zoom';
 import moveFeatures from '../lib/move_features';
 import * as Constants from '../constants';
+import constrainFeatureMovement from '../lib//constrain_feature_movement';
 
 const SimpleSelect = {};
 
@@ -258,11 +259,53 @@ SimpleSelect.dragMove = function(state, e) {
     lng: e.lngLat.lng - state.dragMoveLocation.lng,
     lat: e.lngLat.lat - state.dragMoveLocation.lat
   };
-
-  moveFeatures(this.getSelected(), delta);
-
+  const features = this.getSelected();
+  if (features.every(({type}) => type === 'Point')) {
+    this.dragVertices(state, e, delta, features);
+  } else {
+    moveFeatures(features, delta);
+  }
   state.dragMoveLocation = e.lngLat;
 };
+
+SimpleSelect.dragVertices = function(state, e, delta, pointFeatures) {
+  const origDelta = {lng: delta.lng, lat: delta.lat};
+  const constrainedDelta = constrainFeatureMovement(pointFeatures.map(feature => feature.toGeoJSON()), delta);
+  if (constrainedDelta.lng === origDelta.lng && constrainedDelta.lat === origDelta.lat) {
+    // not constrained
+    if (pointFeatures.length === 1) {
+      pointFeatures[0].incomingCoords([e.lngLat.lng, e.lngLat.lat])
+    } else {
+      // determine wich point should be snapped to e.lngLat
+      let nearestDistance
+      let nearestPoint
+      for (let i = 0; i < pointFeatures.length; i++)  {
+        const coord = pointFeatures[i].getCoordinates();
+        const deltaLng = coord[0] + constrainedDelta.lng - e.lngLat.lng;
+        const deltaLat = coord[1] + constrainedDelta.lat - e.lngLat.lat;
+        const distance = deltaLng * deltaLng + deltaLat * deltaLat;
+        if (nearestDistance === undefined || nearestDistance > distance) {
+          nearestDistance = distance;
+          nearestPoint = i;
+        }
+      }
+      for (let i = 0; i < pointFeatures.length; i++) {
+        if (i === nearestPoint) {
+          pointFeatures[i].incomingCoords([e.lngLat.lng, e.lngLat.lat])
+        } else {
+          const coord = pointFeatures[i].getCoordinates();
+          pointFeatures[i].incomingCoords([coord[0] + constrainedDelta.lng, coord[1] + constrainedDelta.lat]);
+        }
+      }
+    }
+  } else {
+    // constrained, use less precise delta
+    for (const feature of pointFeatures) {
+      const coord = feature.getCoordinates();
+      feature.incomingCoords([coord[0] + constrainedDelta.lng, coord[1] + constrainedDelta.lat]);
+    }
+  }
+}
 
 SimpleSelect.onTouchEnd = SimpleSelect.onMouseUp = function(state, e) {
   // End any extended interactions
