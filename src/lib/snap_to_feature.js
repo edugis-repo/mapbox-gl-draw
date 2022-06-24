@@ -20,21 +20,98 @@ function calcCrow(lat1, lon1, lat2, lon2) {
   return d;
 }
 
-function getNearestPoint(lngLat, coords, nearestDistance, nearestPoint) {
-  if (Array.isArray(coords) && coords.length && Array.isArray(coords[0])) {
-    for (const subCoord of coords) {
-      nearestDistance = getNearestPoint(lngLat, subCoord, nearestDistance, nearestPoint);
+function dot(u, v) {
+  return u[0] * v[0] + u[1] * v[1];
+}
+
+function getSegmentPoint(p, segment) {
+  const a = segment[0];
+  const b = segment[1];
+  // based on https://github.com/Turfjs/turf/blob/f2023aee26f50fa1fe804fba86be212a99b1a181/packages/turf-point-to-line-distance/index.ts
+  const nearestPoint = [0,0];
+  const v = [b[0] - a[0], b[1] - a[1]];
+  const w = [p.lng - a[0], p.lat - a[1]];
+
+  const c1 = dot(w, v);
+  if (c1 <= 0) {
+    // a is nearest to p
+    return a;
+  } else {
+    const c2 = dot(v, v);
+    if (c2 <= c1) {
+      // b is nearest to p
+      return b;
+    } else {
+      const b2 = c1 / c2;
+      const Pb = [a[0] + b2 * v[0], a[1] + b2 * v[1]];
+      // Pb is point on line
+      return Pb;
     }
-    return nearestDistance;
   }
-  const distance = calcCrow(lngLat.lng, lngLat.lat, coords[0], coords[1]);
+}
+
+
+function updateNearestPointDistance(lngLat, point, nearestDistance, nearestPoint) {
+  const distance = calcCrow(lngLat.lng, lngLat.lat, point[0], point[1]);
   if (nearestDistance === undefined || nearestDistance > distance) {
     nearestDistance = distance;
-    nearestPoint[0] = coords[0];
-    nearestPoint[1] = coords[1];
+    nearestPoint[0] = point[0];
+    nearestPoint[1] = point[1];
   }
   return nearestDistance;
 }
+
+function getNearestPointOnFeature(lngLat, geometry, nearestDistance, nearestPoint) {
+  switch (geometry.type) {
+    case 'Point': 
+      const point = geometry.coordinates;
+      nearestDistance = updateNearestPointDistance(lngLat, point, nearestDistance, nearestPoint);
+      break;
+    case 'LineString':
+      for (let i = 0; i < geometry.coordinates.length - 1; i++) {
+        const segment = [geometry.coordinates[i], geometry.coordinates[i+1]];
+        const point = getSegmentPoint(lngLat, segment);
+        nearestDistance = updateNearestPointDistance(lngLat, point, nearestDistance, nearestPoint);
+      }
+      break;
+    case 'Polygon': 
+      for (const ring of geometry.coordinates) {
+        for (let i = 0; i < ring.length; i++) {
+          const segment = [ring[i], ring[i === ring.length -1 ? 0 : i+1]];
+          const point = getSegmentPoint(lngLat, segment);
+          nearestDistance = updateNearestPointDistance(lngLat, point, nearestDistance, nearestPoint);
+        }
+      }
+      break;
+    case 'MultiPoint': 
+      for (const point of geometry.coordinates) {
+        nearestDistance = updateNearestPointDistance(lngLat, point, nearestDistance, nearestPoint);
+      }
+      break;
+    case 'MultiLineString':
+      for (const lineString of geometry.coordinates) {
+        for (let i = 0; i < lineString.length - 1; i++) {
+          const segment = [lineString[i], lineString[i+1]];
+          const point = getSegmentPoint(lngLat, segment);
+          nearestDistance = updateNearestPointDistance(lngLat, point, nearestDistance, nearestPoint);
+        }
+      }
+      break;
+    case 'MultiPolygon': 
+      for (const polygon of geometry.coordinates) {
+        for (const ring of polygon) {
+          for (let i = 0; i < ring.length; i++) {
+            const segment = [ring[i], ring[i === ring.length - 1 ? 0 : i+1]];
+            const point = getSegmentPoint(lngLat, segment);
+            nearestDistance = updateNearestPointDistance(lngLat, point, nearestDistance, nearestPoint);
+          }
+        }
+      }
+      break;
+  }
+  return nearestDistance;
+}
+
 
 function isAltDown(event) {
   return event.originalEvent ? event.originalEvent.altKey : false;
@@ -89,10 +166,10 @@ export default function (event, ctx) {
       for (const feature of features) {
         const storedFeature = ctx.store.get(feature.properties.id);
         if (storedFeature.coordinates) {
-          nearestDistance = getNearestPoint(event.lngLat, storedFeature.coordinates, nearestDistance, nearestPoint);
+          nearestDistance = getNearestPointOnFeature(event.lngLat, storedFeature, nearestDistance, nearestPoint);
         } else {
           // use slightly unprecise coordinate result from queryRenderedFeatures
-          nearestDistance = getNearestPoint(event.lngLat, feature.geometry.coordinates, nearestDistance, nearestPoint);
+          nearestDistance = getNearestPointOnFeature(event.lngLat, feature.geometry, nearestDistance, nearestPoint);
         }
       }
       if (nearestDistance) {
