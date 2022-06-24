@@ -35,24 +35,24 @@ function getSegmentPoint(p, segment) {
   const c1 = dot(w, v);
   if (c1 <= 0) {
     // a is nearest to p
-    return {point: a, interpolated: false};
+    return {coords: a, interpolated: false};
   } else {
     const c2 = dot(v, v);
     if (c2 <= c1) {
       // b is nearest to p
-      return {point: b, interpolated: false};
+      return {coords: b, interpolated: false};
     } else {
       const b2 = c1 / c2;
       const Pb = [a[0] + b2 * v[0], a[1] + b2 * v[1]];
       // Pb is point on line
-      return {point: Pb, interpolated: true, segment: [a, b]};
+      return {coords: Pb, interpolated: true, segment: [a, b]};
     }
   }
 }
 
-function updateNearestPointDistance(lngLat, point, nearestDistance, nearestPoint) {
-  let distance = calcCrow(lngLat.lng, lngLat.lat, point.point[0], point.point[1]);
-  if (nearestDistance > distance) {
+function updateNearestPoint(lngLat, point, nearestPoint) {
+  let distance = calcCrow(lngLat.lng, lngLat.lat, point.coords[0], point.coords[1]);
+  if (nearestPoint.distance > distance) {
     if (point.interpolated) {
       // prefer segment points above interpolated points
       const distanceA = calcCrow(lngLat.lng, lngLat.lat, point.segment[0][0], point.segment[0][1]);
@@ -67,28 +67,39 @@ function updateNearestPointDistance(lngLat, point, nearestDistance, nearestPoint
         cornerDistance = distanceB;
       }
       if (cornerDistance < distance * 1.3) {
-        distance = cornerDistance;
-        point.point = cornerPoint;
+        // replace interpolated line point by corner point
+        return {
+          distance: cornerDistance,
+          coords: cornerPoint,
+          interpolated: false
+        };
+      } 
+      return {
+        distance: distance, 
+        coords: point.coords,
+        interpolated: true
       }
     }
-    nearestDistance = distance;
-    nearestPoint[0] = point.point[0];
-    nearestPoint[1] = point.point[1];
+    return {
+      distance: distance,
+      coords: point.coords,
+      interpolated: false
+    };
   }
-  return nearestDistance;
+  return nearestPoint;
 }
 
-function getNearestPointOnFeature(lngLat, geometry, nearestDistance, nearestPoint) {
+function getNearestPointOnFeature(lngLat, geometry, nearestPoint) {
   switch (geometry.type) {
     case 'Point': 
-      const point = {point: geometry.coordinates, interpolated: false};
-      nearestDistance = updateNearestPointDistance(lngLat, point, nearestDistance, nearestPoint);
+      const point = {coords: geometry.coordinates, interpolated: false};
+      nearestPoint = updateNearestPoint(lngLat, point, nearestPoint);
       break;
     case 'LineString':
       for (let i = 0; i < geometry.coordinates.length - 1; i++) {
         const segment = [geometry.coordinates[i], geometry.coordinates[i+1]];
         const point = getSegmentPoint(lngLat, segment);
-        nearestDistance = updateNearestPointDistance(lngLat, point, nearestDistance, nearestPoint);
+        nearestPoint = updateNearestPoint(lngLat, point, nearestPoint);
       }
       break;
     case 'Polygon': 
@@ -96,13 +107,13 @@ function getNearestPointOnFeature(lngLat, geometry, nearestDistance, nearestPoin
         for (let i = 0; i < ring.length; i++) {
           const segment = [ring[i], ring[i === ring.length -1 ? 0 : i+1]];
           const point = getSegmentPoint(lngLat, segment);
-          nearestDistance = updateNearestPointDistance(lngLat, point, nearestDistance, nearestPoint);
+          nearestPoint = updateNearestPoint(lngLat, point, nearestPoint);
         }
       }
       break;
     case 'MultiPoint': 
-      for (const point of geometry.coordinates) {
-        nearestDistance = updateNearestPointDistance(lngLat, {point: point, interpolated: false}, nearestDistance, nearestPoint);
+      for (const coords of geometry.coordinates) {
+        nearestPoint = updateNearestPoint(lngLat, {coords: coords, interpolated: false}, nearestPoint);
       }
       break;
     case 'MultiLineString':
@@ -110,7 +121,7 @@ function getNearestPointOnFeature(lngLat, geometry, nearestDistance, nearestPoin
         for (let i = 0; i < lineString.length - 1; i++) {
           const segment = [lineString[i], lineString[i+1]];
           const point = getSegmentPoint(lngLat, segment);
-          nearestDistance = updateNearestPointDistance(lngLat, point, nearestDistance, nearestPoint);
+          nearestPoint = updateNearestPoint(lngLat, point, nearestPoint);
         }
       }
       break;
@@ -120,13 +131,13 @@ function getNearestPointOnFeature(lngLat, geometry, nearestDistance, nearestPoin
           for (let i = 0; i < ring.length; i++) {
             const segment = [ring[i], ring[i === ring.length - 1 ? 0 : i+1]];
             const point = getSegmentPoint(lngLat, segment);
-            nearestDistance = updateNearestPointDistance(lngLat, point, nearestDistance, nearestPoint);
+            nearestPoint = updateNearestPoint(lngLat, point, nearestPoint);
           }
         }
       }
       break;
   }
-  return nearestDistance;
+  return nearestPoint;
 }
 
 
@@ -178,21 +189,24 @@ export default function (event, ctx) {
     });
     if (features.length) {
       // get nearest feature point
-      let nearestDistance = Infinity;
-      const nearestPoint = [0, 0];
+      let nearestPoint = {
+        distance: Infinity,
+        coords: [0, 0],
+        interpolated: false
+      }
       for (const feature of features) {
         const storedFeature = ctx.store.get(feature.properties.id);
         if (storedFeature.coordinates) {
-          nearestDistance = getNearestPointOnFeature(event.lngLat, storedFeature, nearestDistance, nearestPoint);
+          nearestPoint = getNearestPointOnFeature(event.lngLat, storedFeature, nearestPoint);
         } else {
           // use slightly unprecise coordinate result from queryRenderedFeatures
-          nearestDistance = getNearestPointOnFeature(event.lngLat, feature.geometry, nearestDistance, nearestPoint);
+          nearestPoint = getNearestPointOnFeature(event.lngLat, feature.geometry, nearestPoint);
         }
       }
-      if (nearestDistance < Infinity) {
+      if (nearestPoint.distance < Infinity) {
         //resultLngLat = {lng: nearestPoint[0], lat: nearestPoint[1]};
-        resultLngLat.lng = nearestPoint[0];
-        resultLngLat.lat = nearestPoint[1];
+        resultLngLat.lng = nearestPoint.coords[0];
+        resultLngLat.lat = nearestPoint.coords[1];
       }
     }
     return resultLngLat;
