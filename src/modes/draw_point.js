@@ -1,6 +1,6 @@
 import * as CommonSelectors from '../lib/common_selectors';
 import * as Constants from '../constants';
-import snapToFeature from '../lib/snap_to_feature';
+import snappedSegmentUpdate from '../lib/snapped_segment_update.js';
 
 const DrawPoint = {};
 
@@ -32,22 +32,10 @@ DrawPoint.stopDrawingAndRemove = function(state) {
   this.changeMode(Constants.modes.SIMPLE_SELECT);
 };
 
-function updateSnappedSegment(e, ctx) {
-  const nearestPoint = snapToFeature(e, ctx);
-  if (nearestPoint.distance < Infinity) {
-    // snapped!
-    if (nearestPoint.interpolated) {
-      const snappedFeature = ctx.store.get(nearestPoint.featureId);
-      snappedFeature.addCoordinate(nearestPoint.path, nearestPoint.coords[0], nearestPoint.coords[1]);
-      console.log('hier')
-    }
-  }
-}
-
 DrawPoint.onTap = DrawPoint.onClick = function(state, e) {
   this.updateUIClasses({ mouse: Constants.cursors.MOVE });
   state.point.updateCoordinate('', e.lngLat.lng, e.lngLat.lat);
-  updateSnappedSegment(e, state.point.ctx);
+  snappedSegmentUpdate(e, state.point.ctx);
   this.map.fire(Constants.events.CREATE, {
     features: [state.point.toGeoJSON()]
   });

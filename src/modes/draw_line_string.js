@@ -2,6 +2,7 @@ import * as CommonSelectors from '../lib/common_selectors';
 import doubleClickZoom from '../lib/double_click_zoom';
 import * as Constants from '../constants';
 import createVertex from '../lib/create_vertex';
+import snappedSegmentUpdate from '../lib/snapped_segment_update';
 
 const DrawLineString = {};
 
@@ -72,6 +73,7 @@ DrawLineString.clickAnywhere = function(state, e) {
       state.direction === 'backwards' && isEventAtCoordinates(e, state.line.coordinates[state.currentVertexPosition + 1])) {
     return this.changeMode(Constants.modes.SIMPLE_SELECT, { featureIds: [state.line.id] });
   }*/
+  snappedSegmentUpdate(e, state.line.ctx);
   this.updateUIClasses({ mouse: Constants.cursors.ADD });
   //state.line.updateCoordinate(state.currentVertexPosition, e.lngLat.lng, e.lngLat.lat);
   if (state.direction === 'forward') {

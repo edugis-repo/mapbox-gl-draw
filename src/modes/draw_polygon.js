@@ -2,6 +2,7 @@ import * as CommonSelectors from '../lib/common_selectors';
 import doubleClickZoom from '../lib/double_click_zoom';
 import * as Constants from '../constants';
 import createVertex from '../lib/create_vertex';
+import snappedSegmentUpdate from '../lib/snapped_segment_update';
 
 const DrawPolygon = {};
 
@@ -35,6 +36,7 @@ DrawPolygon.clickAnywhere = function(state, e) {
   /*if (state.currentVertexPosition > 0 && isEventAtCoordinates(e, state.polygon.coordinates[0][state.currentVertexPosition - 1])) {
     return this.changeMode(Constants.modes.SIMPLE_SELECT, { featureIds: [state.polygon.id] });
   }*/
+  snappedSegmentUpdate(e, state.polygon.ctx);
   this.updateUIClasses({ mouse: Constants.cursors.ADD });
   state.polygon.updateCoordinate(`0.${state.currentVertexPosition}`, e.lngLat.lng, e.lngLat.lat);
   state.currentVertexPosition++;
