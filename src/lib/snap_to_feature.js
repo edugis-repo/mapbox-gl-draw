@@ -29,7 +29,6 @@ function getSegmentPoint(p, segment, featureId, path) {
   const a = segment[0];
   const b = segment[1];
   // based on https://github.com/Turfjs/turf/blob/f2023aee26f50fa1fe804fba86be212a99b1a181/packages/turf-point-to-line-distance/index.ts
-  const nearestPoint = [0,0];
   const v = [b[0] - a[0], b[1] - a[1]];
   const w = [p.lng - a[0], p.lat - a[1]];
 
@@ -46,13 +45,13 @@ function getSegmentPoint(p, segment, featureId, path) {
       const b2 = c1 / c2;
       const Pb = [a[0] + b2 * v[0], a[1] + b2 * v[1]];
       // Pb is point on line
-      return {coords: Pb, interpolated: true, segment: [a, b], featureId: featureId, path: path};
+      return {coords: Pb, interpolated: true, segment: [a, b], featureId, path};
     }
   }
 }
 
 function updateNearestPoint(lngLat, point, nearestPoint) {
-  let distance = calcCrow(lngLat.lng, lngLat.lat, point.coords[0], point.coords[1]);
+  const distance = calcCrow(lngLat.lng, lngLat.lat, point.coords[0], point.coords[1]);
   if (nearestPoint.distance > distance) {
     if (point.interpolated) {
       // prefer segment points above interpolated points
@@ -74,17 +73,17 @@ function updateNearestPoint(lngLat, point, nearestPoint) {
           coords: cornerPoint,
           interpolated: false
         };
-      } 
+      }
       return {
-        distance: distance, 
+        distance,
         coords: point.coords,
         interpolated: true,
-        featureId: point.featureId, 
+        featureId: point.featureId,
         path: point.path
-      }
+      };
     }
     return {
-      distance: distance,
+      distance,
       coords: point.coords,
       interpolated: false
     };
@@ -94,55 +93,57 @@ function updateNearestPoint(lngLat, point, nearestPoint) {
 
 function getNearestPointOnFeature(featureId, lngLat, geometry, nearestPoint) {
   switch (geometry.type) {
-    case 'Point': 
+  case 'Point':
+    {
       const point = {coords: geometry.coordinates, interpolated: false};
       nearestPoint = updateNearestPoint(lngLat, point, nearestPoint);
-      break;
-    case 'LineString':
-      for (let i = 0; i < geometry.coordinates.length - 1; i++) {
-        const segment = [geometry.coordinates[i], geometry.coordinates[i+1]];
-        const point = getSegmentPoint(lngLat, segment, featureId, `${i+1}`);// why +1?
+    }
+    break;
+  case 'LineString':
+    for (let i = 0; i < geometry.coordinates.length - 1; i++) {
+      const segment = [geometry.coordinates[i], geometry.coordinates[i + 1]];
+      const point = getSegmentPoint(lngLat, segment, featureId, `${i + 1}`);// why +1?
+      nearestPoint = updateNearestPoint(lngLat, point, nearestPoint);
+    }
+    break;
+  case 'Polygon':
+    for (let ringIndex = 0; ringIndex < geometry.coordinates.length; ringIndex++) {
+      const ring = geometry.coordinates[ringIndex];
+      for (let i = 0; i < ring.length; i++) {
+        const segment = [ring[i], ring[i === ring.length - 1 ? 0 : i + 1]];
+        const point = getSegmentPoint(lngLat, segment, featureId, `${ringIndex}.${i + 1}`);// why +1?
         nearestPoint = updateNearestPoint(lngLat, point, nearestPoint);
       }
-      break;
-    case 'Polygon': 
-      for (let ringIndex = 0; ringIndex < geometry.coordinates.length; ringIndex++) {
-        const ring = geometry.coordinates[ringIndex];
+    }
+    break;
+  case 'MultiPoint':
+    for (const coords of geometry.coordinates) {
+      nearestPoint = updateNearestPoint(lngLat, {coords, interpolated: false}, nearestPoint);
+    }
+    break;
+  case 'MultiLineString':
+    for (let lineStringIndex = 0; lineStringIndex < geometry.coordinates.length; lineStringIndex++) {
+      const lineString = geometry.coordinates[lineStringIndex];
+      for (let i = 0; i < lineString.length - 1; i++) {
+        const segment = [lineString[i], lineString[i + 1]];
+        const point = getSegmentPoint(lngLat, segment, featureId, `${lineStringIndex}.${i + 1}`);
+        nearestPoint = updateNearestPoint(lngLat, point, nearestPoint);
+      }
+    }
+    break;
+  case 'MultiPolygon':
+    for (let polygonIndex = 0; polygonIndex < geometry.coordinates.length; polygonIndex++) {
+      const polygon = geometry.coordinates[polygonIndex];
+      for (let ringIndex = 0; ringIndex < polygon.length; ringIndex++) {
+        const ring = polygon[ringIndex];
         for (let i = 0; i < ring.length; i++) {
-          const segment = [ring[i], ring[i === ring.length -1 ? 0 : i+1]];
-          const point = getSegmentPoint(lngLat, segment, featureId, `${ringIndex}.${i+1}`);// why +1?
+          const segment = [ring[i], ring[i === ring.length - 1 ? 0 : i + 1]];
+          const point = getSegmentPoint(lngLat, segment, featureId, `${polygonIndex}.${ringIndex}.${i + 1}`);
           nearestPoint = updateNearestPoint(lngLat, point, nearestPoint);
         }
       }
-      break;
-    case 'MultiPoint': 
-      for (const coords of geometry.coordinates) {
-        nearestPoint = updateNearestPoint(lngLat, {coords: coords, interpolated: false}, nearestPoint);
-      }
-      break;
-    case 'MultiLineString':
-      for (let lineStringIndex = 0; lineStringIndex < geometry.coordinates.length; lineStringIndex++) {
-        const lineString = geometry.coordinates[lineStringIndex];
-        for (let i = 0; i < lineString.length - 1; i++) {
-          const segment = [lineString[i], lineString[i+1]];
-          const point = getSegmentPoint(lngLat, segment, featureId, `${lineStringIndex}.${i+1}`);
-          nearestPoint = updateNearestPoint(lngLat, point, nearestPoint);
-        }
-      }
-      break;
-    case 'MultiPolygon': 
-      for (let polygonIndex = 0; polygonIndex < geometry.coordinates.length; polygonIndex++) {
-        const polygon = geometry.coordinates[polygonIndex];
-        for (let ringIndex = 0; ringIndex < polygon.length; ringIndex++) {
-          const ring = polygon[ringIndex];
-          for (let i = 0; i < ring.length; i++) {
-            const segment = [ring[i], ring[i === ring.length - 1 ? 0 : i+1]];
-            const point = getSegmentPoint(lngLat, segment, featureId, `${polygonIndex}.${ringIndex}.${i+1}`);
-            nearestPoint = updateNearestPoint(lngLat, point, nearestPoint);
-          }
-        }
-      }
-      break;
+    }
+    break;
   }
   return nearestPoint;
 }
@@ -152,12 +153,22 @@ function isAltDown(event) {
   return event.originalEvent ? event.originalEvent.altKey : false;
 }
 
+/**
+ * try to snap to nearby previously existing feature
+ * @param {MouseEvent} event event.lngLat is updated when snapping succeeds
+ * @param {MapboxGlContext} ctx
+ * @returns {{distance: number, coords: Array<number,number>, interpolated: boolean, path: string}} NearestPoint
+ * @returns {number} NearestPoint.distance distance in km | Infinity
+ * @returns {Array<number,number>} NearestPont.coords coordinates of snapped point
+ * @returns {boolean} NearestPoint.interpolated true when snapped to point on segment between 2 points, path: string encoded location of point within feature
+ * @returns {string} NearestPoint.path string encoding of location of snapped point within feature
+ */
 export default function (event, ctx) {
   let nearestPoint = {
     distance: Infinity,
     coords: [0, 0],
     interpolated: false
-  }
+  };
   if (ctx.options.snapEnabled && !isAltDown(event)) {
     const selectedFeatureIds = ctx.api.getSelectedIds();
     if (ctx.events.currentModeName().indexOf('select') !== -1 && selectedFeatureIds.length === 0) {
