@@ -25,7 +25,7 @@ function dot(u, v) {
 }
 
 // path: comma separated path to segment, ie polygon#,ring#,node# or linestring#,node# for multilnestring
-function getSegmentPoint(p, segment, path) {
+function getSegmentPoint(p, segment, featureId, path) {
   const a = segment[0];
   const b = segment[1];
   // based on https://github.com/Turfjs/turf/blob/f2023aee26f50fa1fe804fba86be212a99b1a181/packages/turf-point-to-line-distance/index.ts
@@ -46,7 +46,7 @@ function getSegmentPoint(p, segment, path) {
       const b2 = c1 / c2;
       const Pb = [a[0] + b2 * v[0], a[1] + b2 * v[1]];
       // Pb is point on line
-      return {coords: Pb, interpolated: true, segment: [a, b], path: path};
+      return {coords: Pb, interpolated: true, segment: [a, b], featureId: featureId, path: path};
     }
   }
 }
@@ -79,6 +79,7 @@ function updateNearestPoint(lngLat, point, nearestPoint) {
         distance: distance, 
         coords: point.coords,
         interpolated: true,
+        featureId: point.featureId, 
         path: point.path
       }
     }
@@ -91,7 +92,7 @@ function updateNearestPoint(lngLat, point, nearestPoint) {
   return nearestPoint;
 }
 
-function getNearestPointOnFeature(lngLat, geometry, nearestPoint) {
+function getNearestPointOnFeature(featureId, lngLat, geometry, nearestPoint) {
   switch (geometry.type) {
     case 'Point': 
       const point = {coords: geometry.coordinates, interpolated: false};
@@ -100,7 +101,7 @@ function getNearestPointOnFeature(lngLat, geometry, nearestPoint) {
     case 'LineString':
       for (let i = 0; i < geometry.coordinates.length - 1; i++) {
         const segment = [geometry.coordinates[i], geometry.coordinates[i+1]];
-        const point = getSegmentPoint(lngLat, segment, `${i}`);
+        const point = getSegmentPoint(lngLat, segment, featureId, `${i+1}`);// why +1?
         nearestPoint = updateNearestPoint(lngLat, point, nearestPoint);
       }
       break;
@@ -109,7 +110,7 @@ function getNearestPointOnFeature(lngLat, geometry, nearestPoint) {
         const ring = geometry.coordinates[ringIndex];
         for (let i = 0; i < ring.length; i++) {
           const segment = [ring[i], ring[i === ring.length -1 ? 0 : i+1]];
-          const point = getSegmentPoint(lngLat, segment, `${ringIndex},${i}`);
+          const point = getSegmentPoint(lngLat, segment, featureId, `${ringIndex}.${i+1}`);// why +1?
           nearestPoint = updateNearestPoint(lngLat, point, nearestPoint);
         }
       }
@@ -124,7 +125,7 @@ function getNearestPointOnFeature(lngLat, geometry, nearestPoint) {
         const lineString = geometry.coordinates[lineStringIndex];
         for (let i = 0; i < lineString.length - 1; i++) {
           const segment = [lineString[i], lineString[i+1]];
-          const point = getSegmentPoint(lngLat, segment, `${lineStringIndex},${i}`);
+          const point = getSegmentPoint(lngLat, segment, featureId, `${lineStringIndex}.${i+1}`);
           nearestPoint = updateNearestPoint(lngLat, point, nearestPoint);
         }
       }
@@ -136,7 +137,7 @@ function getNearestPointOnFeature(lngLat, geometry, nearestPoint) {
           const ring = polygon[ringIndex];
           for (let i = 0; i < ring.length; i++) {
             const segment = [ring[i], ring[i === ring.length - 1 ? 0 : i+1]];
-            const point = getSegmentPoint(lngLat, segment, `${polygonIndex},${ringIndex},${i}`);
+            const point = getSegmentPoint(lngLat, segment, featureId, `${polygonIndex}.${ringIndex}.${i+1}`);
             nearestPoint = updateNearestPoint(lngLat, point, nearestPoint);
           }
         }
@@ -203,10 +204,11 @@ export default function (event, ctx) {
       for (const feature of features) {
         const storedFeature = ctx.store.get(feature.properties.id);
         if (storedFeature.coordinates) {
-          nearestPoint = getNearestPointOnFeature(event.lngLat, storedFeature, nearestPoint);
+          nearestPoint = getNearestPointOnFeature(feature.properties.id, event.lngLat, storedFeature, nearestPoint);
         } else {
           // use slightly unprecise coordinate result from queryRenderedFeatures
-          nearestPoint = getNearestPointOnFeature(event.lngLat, feature.geometry, nearestPoint);
+          const featureId = feature.properties.id ? feature.properties.id : feature.id;
+          nearestPoint = getNearestPointOnFeature(featureId, event.lngLat, feature.geometry, nearestPoint);
         }
       }
       if (nearestPoint.distance < Infinity) {
