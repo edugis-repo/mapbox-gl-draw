@@ -179,23 +179,8 @@ export default function (event, ctx) {
     const resultLngLat = event.lngLat;// {lng: lngLat.lng, lat: lngLat.lat};
     const buffer = ctx.options.snapClickBuffer;
     const box = [[event.point.x - buffer, event.point.y - buffer], [event.point.x + buffer, event.point.y + buffer]];
-    const testlayers = ['drawPoints', 'drawLines', 'drawPolygons',
-      //'gl-draw-polygon-fill-inactive.hot',
-      //'gl-draw-polygon-stroke-inactive.hot',
-      //'gl-draw-line-inactive.hot',
-      //'gl-draw-polygon-and-line-vertex-stroke-inactive.hot',
-      //'gl-draw-polygon-and-line-vertex-inactive.hot',
-      //'gl-draw-point-point-stroke-inactive.hot',
-      //'gl-draw-point-inactive.hot',
-      //'gl-draw-polygon-fill-inactive.cold',
-      'gl-draw-polygon-stroke-inactive.cold',
-      'gl-draw-line-inactive.cold',
-      //'gl-draw-polygon-and-line-vertex-stroke-inactive.cold',
-      //'gl-draw-polygon-and-line-vertex-inactive.cold',
-      //'gl-draw-point-point-stroke-inactive.cold',
-      'gl-draw-point-inactive.cold',
-    ];
-    const layers = map.getStyle().layers.filter(layer => testlayers.includes(layer.id)).map(layer => layer.id);
+    const snapLayers = ctx.options.snapLayers;
+    const layers = map.getStyle().layers.filter(layer => snapLayers.includes(layer.id)).map(layer => layer.id);
     const uniqueFeatures = new Set();
     const features = map.queryRenderedFeatures(box, {layers}).filter((feature) => {
       if (!Object.prototype.hasOwnProperty.call(feature.properties, 'id')) {
@@ -214,7 +199,7 @@ export default function (event, ctx) {
       // get nearest feature point
       for (const feature of features) {
         const storedFeature = ctx.store.get(feature.properties.id);
-        if (storedFeature.coordinates) {
+        if (storedFeature && storedFeature.coordinates) {
           nearestPoint = getNearestPointOnFeature(feature.properties.id, event.lngLat, storedFeature, nearestPoint);
         } else {
           // use slightly unprecise coordinate result from queryRenderedFeatures

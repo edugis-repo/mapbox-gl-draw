@@ -12,7 +12,9 @@ export default function (e, ctx) {
     // snapped!
     if (nearestPoint.interpolated) {
       const snappedFeature = ctx.store.get(nearestPoint.featureId);
-      snappedFeature.addCoordinate(nearestPoint.path, nearestPoint.coords[0], nearestPoint.coords[1]);
+      if (snappedFeature) {
+        snappedFeature.addCoordinate(nearestPoint.path, nearestPoint.coords[0], nearestPoint.coords[1]);
+      }
     }
   }
 }
