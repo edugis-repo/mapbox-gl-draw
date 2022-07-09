@@ -1,8 +1,8 @@
 import * as CommonSelectors from '../lib/common_selectors';
-import isEventAtCoordinates from '../lib/is_event_at_coordinates';
 import doubleClickZoom from '../lib/double_click_zoom';
 import * as Constants from '../constants';
 import createVertex from '../lib/create_vertex';
+import snappedSegmentUpdate from '../lib/snapped_segment_update';
 
 const DrawLineString = {};
 
@@ -69,12 +69,13 @@ DrawLineString.onSetup = function(opts) {
 };
 
 DrawLineString.clickAnywhere = function(state, e) {
-  if (state.currentVertexPosition > 0 && isEventAtCoordinates(e, state.line.coordinates[state.currentVertexPosition - 1]) ||
+  /* if (state.currentVertexPosition > 0 && isEventAtCoordinates(e, state.line.coordinates[state.currentVertexPosition - 1]) ||
       state.direction === 'backwards' && isEventAtCoordinates(e, state.line.coordinates[state.currentVertexPosition + 1])) {
     return this.changeMode(Constants.modes.SIMPLE_SELECT, { featureIds: [state.line.id] });
-  }
+  }*/
+  snappedSegmentUpdate(e, state.line.ctx);
   this.updateUIClasses({ mouse: Constants.cursors.ADD });
-  state.line.updateCoordinate(state.currentVertexPosition, e.lngLat.lng, e.lngLat.lat);
+  //state.line.updateCoordinate(state.currentVertexPosition, e.lngLat.lng, e.lngLat.lat);
   if (state.direction === 'forward') {
     state.currentVertexPosition++;
     state.line.updateCoordinate(state.currentVertexPosition, e.lngLat.lng, e.lngLat.lat);
@@ -87,15 +88,22 @@ DrawLineString.clickOnVertex = function(state) {
   return this.changeMode(Constants.modes.SIMPLE_SELECT, { featureIds: [state.line.id] });
 };
 
+
 DrawLineString.onMouseMove = function(state, e) {
   state.line.updateCoordinate(state.currentVertexPosition, e.lngLat.lng, e.lngLat.lat);
-  if (CommonSelectors.isVertex(e)) {
+  /* if (CommonSelectors.isVertex(e)) {
     this.updateUIClasses({ mouse: Constants.cursors.POINTER });
-  }
+  }*/
 };
 
 DrawLineString.onTap = DrawLineString.onClick = function(state, e) {
-  if (CommonSelectors.isVertex(e)) return this.clickOnVertex(state, e);
+  if (state.currentVertexPosition > 0 &&
+      state.line.coordinates[state.currentVertexPosition][0] ===
+        state.line.coordinates[state.currentVertexPosition - 1][0] &&
+      state.line.coordinates[state.currentVertexPosition][1] ===
+        state.line.coordinates[state.currentVertexPosition - 1][1]) {
+    return this.changeMode(Constants.modes.SIMPLE_SELECT, { featureIds: [state.line.id] });
+  }
   this.clickAnywhere(state, e);
 };
 
@@ -136,16 +144,11 @@ DrawLineString.toDisplayFeatures = function(state, geojson, display) {
   const isActiveLine = geojson.properties.id === state.line.id;
   geojson.properties.active = (isActiveLine) ? Constants.activeStates.ACTIVE : Constants.activeStates.INACTIVE;
   if (!isActiveLine) return display(geojson);
-  // Only render the line if it has at least one real coordinate
-  if (geojson.geometry.coordinates.length < 2) return;
   geojson.properties.meta = Constants.meta.FEATURE;
-  display(createVertex(
-    state.line.id,
-    geojson.geometry.coordinates[state.direction === 'forward' ? geojson.geometry.coordinates.length - 2 : 1],
-    `${state.direction === 'forward' ? geojson.geometry.coordinates.length - 2 : 1}`,
-    false
-  ));
-
+  for (let i = 0; i < geojson.geometry.coordinates.length; i++) {
+    const coordinate = geojson.geometry.coordinates[i];
+    display(createVertex(state.line.id, coordinate, `${i}`, false));
+  }
   display(geojson);
 };
 

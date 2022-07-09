@@ -1,5 +1,6 @@
 import * as CommonSelectors from '../lib/common_selectors';
 import * as Constants from '../constants';
+import snappedSegmentUpdate from '../lib/snapped_segment_update.js';
 
 const DrawPoint = {};
 
@@ -34,6 +35,7 @@ DrawPoint.stopDrawingAndRemove = function(state) {
 DrawPoint.onTap = DrawPoint.onClick = function(state, e) {
   this.updateUIClasses({ mouse: Constants.cursors.MOVE });
   state.point.updateCoordinate('', e.lngLat.lng, e.lngLat.lat);
+  snappedSegmentUpdate(e, state.point.ctx);
   this.map.fire(Constants.events.CREATE, {
     features: [state.point.toGeoJSON()]
   });

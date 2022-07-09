@@ -15,7 +15,26 @@ const defaultOptions = {
   styles,
   modes,
   controls: {},
-  userProperties: false
+  userProperties: false,
+  snapEnabled: true,
+  snapClickBuffer: 20,
+  snapTouchBuffer: 30,
+  snapLayers: [
+    //'gl-draw-polygon-fill-inactive.hot',
+    //'gl-draw-polygon-stroke-inactive.hot',
+    //'gl-draw-line-inactive.hot',
+    //'gl-draw-polygon-and-line-vertex-stroke-inactive.hot',
+    //'gl-draw-polygon-and-line-vertex-inactive.hot',
+    //'gl-draw-point-point-stroke-inactive.hot',
+    //'gl-draw-point-inactive.hot',
+    //'gl-draw-polygon-fill-inactive.cold',
+    'gl-draw-polygon-stroke-inactive.cold',
+    'gl-draw-line-inactive.cold',
+    //'gl-draw-polygon-and-line-vertex-stroke-inactive.cold',
+    //'gl-draw-polygon-and-line-vertex-inactive.cold',
+    //'gl-draw-point-point-stroke-inactive.cold',
+    'gl-draw-point-inactive.cold',
+  ]
 };
 
 const showControls = {

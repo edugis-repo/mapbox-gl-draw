@@ -5,6 +5,7 @@ import isClick from './lib/is_click';
 import isTap from './lib/is_tap';
 import * as Constants from './constants';
 import objectToMode from './modes/object_to_mode';
+import snapToFeature from './lib/snap_to_feature';
 
 export default function(ctx) {
 
@@ -41,6 +42,7 @@ export default function(ctx) {
 
   events.mousemove = function(event) {
     const button = event.originalEvent.buttons !== undefined ? event.originalEvent.buttons : event.originalEvent.which;
+    snapToFeature(event, ctx);
     if (button === 1) {
       return events.mousedrag(event);
     }
@@ -54,12 +56,14 @@ export default function(ctx) {
       time: new Date().getTime(),
       point: event.point
     };
+    snapToFeature(event, ctx);
     const target = getFeaturesAndSetCursor(event, ctx);
     event.featureTarget = target;
     currentMode.mousedown(event);
   };
 
   events.mouseup = function(event) {
+    snapToFeature(event, ctx);
     const target = getFeaturesAndSetCursor(event, ctx);
     event.featureTarget = target;
 
