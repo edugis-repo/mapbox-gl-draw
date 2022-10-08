@@ -55,7 +55,12 @@ DrawPolygon.onMouseMove = function(state, e) {
   }*/
 };
 
-DrawPolygon.onTap = DrawPolygon.onClick = function(state, e) {
+DrawPolygon.onTap = function (state, e) {
+  this.onMouseMove(state,e);
+  this.onClick(state, e);
+};
+
+DrawPolygon.onClick = function(state, e) {
   //if (CommonSelectors.isVertex(e)) return this.clickOnVertex(state, e);
   if (state.currentVertexPosition > 0 &&
     state.polygon.coordinates.length > 0 &&

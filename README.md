@@ -1,15 +1,17 @@
-# @mapbox/mapbox-gl-draw
+# @edugis/mapbox-gl-draw
+
+fork from @mapbox/mapbox-gl-draw
 
 [![Build Status](https://travis-ci.org/mapbox/mapbox-gl-draw.svg?branch=main)](https://travis-ci.org/mapbox/mapbox-gl-draw)
 
 Adds support for drawing and editing features on [mapbox-gl.js](https://www.mapbox.com/mapbox-gl-js/) maps. [See a live example here](https://www.mapbox.com/mapbox-gl-js/example/mapbox-gl-draw/)
 
-**Requires [mapbox-gl-js](https://github.com/mapbox/mapbox-gl-js).**
+**Requires [mapbox-gl-js](https://github.com/mapbox/mapbox-gl-js).** or **Requires [maplibre-gl-js](https://github.com/maplibre/maplibre-gl-js).**
 
 ### Installing
 
 ```
-npm install @mapbox/mapbox-gl-draw
+npm install @edugis/mapbox-gl-draw
 ```
 
 Draw ships with CSS, make sure you include it in your build.
@@ -22,26 +24,15 @@ Draw ships with CSS, make sure you include it in your build.
 
 ```js
 import mapboxgl from 'mapbox-gl';
-import MapboxDraw from "@mapbox/mapbox-gl-draw";
-```
-
-**When using a CDN**
-
-```html
-<script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.3.0/mapbox-gl-draw.js'></script>
+import MapboxDraw from "@edugis/mapbox-gl-draw";
 ```
 
 #### CSS
 
 **When using modules**
  ```js
-import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css'
+import '@edugis/mapbox-gl-draw/dist/mapbox-gl-draw.css'
  ```
-
-**When using CDN**
-```html
-<link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.3.0/mapbox-gl-draw.css' type='text/css' />
-```
 
 ### Typescript
 
@@ -113,16 +104,6 @@ git push
 npm publish
 ```
 
-To CDN:
-
-```
-# make sure you are authenticated for AWS
-git checkout v{x.y.z}
-yarn install
-yarn run prepublish
-aws s3 cp --recursive --acl public-read dist s3://mapbox-gl-js/plugins/mapbox-gl-draw/v{x.y.z}
-```
-
 Update the version number in [the GL JS example](https://github.com/mapbox/mapbox-gl-js/blob/publisher-production/docs/pages/example/mapbox-gl-draw.html).
 
 ### Naming actions
@@ -131,3 +112,25 @@ We're trying to follow standards when naming things. Here is a collection of lin
 
 - https://turfjs.org
 - https://shapely.readthedocs.io/en/latest/manual.html
+
+
+### debugging without publishing to npm
+Once: in the mapbox-gl-draw project directory type:
+```
+npm link
+```
+
+Once: in the project that is using mapbox-gl-draw type:
+```
+npm link @edugis/mapbox-gl-draw
+```
+
+To build mapbox-gl-draw updates type:
+```
+npm run build
+```
+
+To use the newly built mapbox-gl-draw in your project, use: 
+```
+<script src="node_modules/@edugis/mapbox-gl-draw/dist/mapbox-gl-draw-unminified.js"></script>
+```

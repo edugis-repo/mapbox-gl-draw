@@ -84,7 +84,9 @@ export default function(ctx) {
   events.touchstart = function(event) {
     // Prevent emulated mouse events because we will fully handle the touch here.
     // This does not stop the touch events from propogating to mapbox though.
-    event.originalEvent.preventDefault();
+
+    // unable to preventDefault inside passive event listener invocation
+    //event.originalEvent.preventDefault();
     if (!ctx.options.touchEnabled) {
       return;
     }
@@ -93,6 +95,7 @@ export default function(ctx) {
       time: new Date().getTime(),
       point: event.point
     };
+    snapToFeature(event, ctx);
     const target = featuresAt.touch(event, null, ctx)[0];
     event.featureTarget = target;
     currentMode.touchstart(event);
@@ -103,7 +106,7 @@ export default function(ctx) {
     if (!ctx.options.touchEnabled) {
       return;
     }
-
+    snapToFeature(event, ctx);
     currentMode.touchmove(event);
     return events.touchdrag(event);
   };
@@ -113,7 +116,7 @@ export default function(ctx) {
     if (!ctx.options.touchEnabled) {
       return;
     }
-
+    snapToFeature(event, ctx);
     const target = featuresAt.touch(event, null, ctx)[0];
     event.featureTarget = target;
     if (isTap(touchStartInfo, {

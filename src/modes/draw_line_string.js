@@ -96,7 +96,12 @@ DrawLineString.onMouseMove = function(state, e) {
   }*/
 };
 
-DrawLineString.onTap = DrawLineString.onClick = function(state, e) {
+DrawLineString.onTap = function(state, e) {
+  this.onMouseMove(state, e);
+  this.onClick(state, e);
+};
+
+DrawLineString.onClick = function(state, e) {
   if (state.currentVertexPosition > 0 &&
       state.line.coordinates[state.currentVertexPosition][0] ===
         state.line.coordinates[state.currentVertexPosition - 1][0] &&

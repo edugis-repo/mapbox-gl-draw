@@ -1,8 +1,8 @@
 {
-  "name": "@mapbox/mapbox-gl-draw",
-  "version": "1.3.1",
+  "name": "@edugis/mapbox-gl-draw",
+  "version": "0.0.3",
   "description": "A drawing component for Mapbox GL JS",
-  "homepage": "https://github.com/mapbox/mapbox-gl-draw",
+  "homepage": "https://github.com/edugis-repo/mapbox-gl-draw",
   "author": "mapbox",
   "license": "ISC",
   "main": "dist/mapbox-gl-draw-unminified.js",
@@ -36,16 +36,17 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/mapbox/mapbox-gl-draw.git"
+    "url": "git://github.com/edugisrepo/mapbox-gl-draw.git"
   },
   "keywords": [
     "webgl",
     "mapbox",
     "draw",
-    "drawing"
+    "drawing",
+    "snap"
   ],
   "bugs": {
-    "url": "https://github.com/mapbox/mapbox-gl-draw/issues"
+    "url": "https://github.com/edugis-repo/mapbox-gl-draw/issues"
   },
   "nyc": {
     "sourceMap": false,
