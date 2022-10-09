@@ -10,6 +10,7 @@ const defaultOptions = {
   touchEnabled: true,
   clickBuffer: 2,
   touchBuffer: 25,
+  doubleTapBuffer: 12,
   boxSelect: true,
   displayControlsDefault: true,
   styles,

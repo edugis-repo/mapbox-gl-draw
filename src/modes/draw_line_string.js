@@ -3,6 +3,7 @@ import doubleClickZoom from '../lib/double_click_zoom';
 import * as Constants from '../constants';
 import createVertex from '../lib/create_vertex';
 import snappedSegmentUpdate from '../lib/snapped_segment_update';
+import euclideanDistance from '../lib/euclidean_distance';
 
 const DrawLineString = {};
 
@@ -98,6 +99,11 @@ DrawLineString.onMouseMove = function(state, e) {
 
 DrawLineString.onTap = function(state, e) {
   this.onMouseMove(state, e);
+  if (state.currentVertexPosition > 0 && this.prevTapPoint && euclideanDistance(e.point, this.prevTapPoint) < state.line.ctx.options.doubleTapBuffer) {
+    this.prevTapPoint = null;
+    return this.changeMode(Constants.modes.SIMPLE_SELECT, { featureIds: [state.line.id] });
+  }
+  this.prevTapPoint = e.point;
   this.onClick(state, e);
 };
 
