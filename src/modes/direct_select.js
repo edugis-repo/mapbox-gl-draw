@@ -19,6 +19,14 @@ DirectSelect.fireUpdate = function() {
   });
 };
 
+DirectSelect.fireMidpointUpdate = function() {
+  this.map.fire(Constants.events.UPDATE, {
+    action: Constants.updateActions.CHANGE_COORDINATES,
+    features: this.getSelected().map(f => f.toGeoJSON()),
+    midpoint: true
+  });
+};
+
 DirectSelect.fireActionable = function(state) {
   this.setActionableState({
     combineFeatures: false,
@@ -58,7 +66,7 @@ DirectSelect.onMidpoint = function(state, e) {
   this.startDragging(state, e);
   const about = e.featureTarget.properties;
   state.feature.addCoordinate(about.coord_path, about.lng, about.lat);
-  this.fireUpdate();
+  this.fireMidpointUpdate();
   state.selectedCoordPaths = [about.coord_path];
 };
 
