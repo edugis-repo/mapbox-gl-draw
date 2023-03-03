@@ -161,9 +161,19 @@ DrawPolygon.toDisplayFeatures = function(state, geojson, display) {
   return display(geojson);
 };
 
+DrawPolygon.removePoint = function(state) {
+  if (state.currentVertexPosition > 1) {
+    state.polygon.removeCoordinate(`0.${state.currentVertexPosition - 1}`);
+    state.currentVertexPosition--;
+  }
+};
+
 DrawPolygon.onTrash = function(state) {
-  this.deleteFeature([state.polygon.id], { silent: true });
-  this.changeMode(Constants.modes.SIMPLE_SELECT);
+  this.removePoint(state);
+  if (state.currentVertexPosition <= 1) {
+    this.deleteFeature([state.polygon.id], { silent: true });
+    this.changeMode(Constants.modes.SIMPLE_SELECT);
+  }
 };
 
 export default DrawPolygon;

@@ -146,9 +146,21 @@ DrawLineString.onStop = function(state) {
   }
 };
 
+DrawLineString.removePoint = function(state) {
+  if (state.currentVertexPosition > 0) {
+    state.line.removeCoordinate(`${state.currentVertexPosition - 1}`);
+    state.currentVertexPosition--;
+  }
+};
+
 DrawLineString.onTrash = function(state) {
-  this.deleteFeature([state.line.id], { silent: true });
-  this.changeMode(Constants.modes.SIMPLE_SELECT);
+  if (state.currentVertexPosition > 0) {
+    this.removePoint(state);
+  }
+  if (state.currentVertexPosition === 0) {
+    this.deleteFeature([state.line.id], { silent: true });
+    this.changeMode(Constants.modes.SIMPLE_SELECT);
+  }
 };
 
 DrawLineString.toDisplayFeatures = function(state, geojson, display) {

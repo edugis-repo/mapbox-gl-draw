@@ -21,7 +21,8 @@ export default {
   treeshake: true,
   plugins: [
     replace({
-      'process.env.NODE_ENV': "'browser'"
+      'process.env.NODE_ENV': "'browser'",
+      preventAssignment: true
     }),
     buble({transforms: {dangerousForOf: true}, objectAssign: "Object.assign"}),
     minified ? terser() : false,
